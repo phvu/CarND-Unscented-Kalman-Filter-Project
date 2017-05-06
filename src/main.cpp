@@ -14,12 +14,19 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
-void check_arguments(int argc, char* argv[]) {
+/**
+ * Return the type of sensor to use: 1 (radar), 2 (lidar) or 3 (both).
+ */
+int check_arguments(int argc, char* argv[]) {
   string usage_instructions = "Usage instructions: ";
   usage_instructions += argv[0];
-  usage_instructions += " path/to/input.txt output.txt";
+  usage_instructions += " path/to/input.txt output.txt [r|l|rl]\n";
+  usage_instructions += " The 3rd parameter specifies the type of sensor to use: r(adar) or l(idar) or rl (both)";
+  usage_instructions += " Default value is rl";
 
   bool has_valid_args = false;
+  const char *sensor_modes[] = {"r", "l", "rl"};
+  int sensor_mode = -1;
 
   // make sure the user has provided input and output files
   if (argc == 1) {
@@ -28,13 +35,27 @@ void check_arguments(int argc, char* argv[]) {
     cerr << "Please include an output file.\n" << usage_instructions << endl;
   } else if (argc == 3) {
     has_valid_args = true;
-  } else if (argc > 3) {
+    sensor_mode = 3;
+  } else if (argc == 4) {
+    has_valid_args = true;
+    for (int i = 0; i < 3; ++i) {
+      if (strcmp(sensor_modes[i], argv[3]) == 0) {
+        sensor_mode = i + 1;
+      }
+    }
+    if (sensor_mode < 0) {
+      cerr << "Invalid sensor type: " << argv[3] << endl;
+      has_valid_args = false;
+    }
+  } else {
     cerr << "Too many arguments.\n" << usage_instructions << endl;
   }
+
 
   if (!has_valid_args) {
     exit(EXIT_FAILURE);
   }
+  return sensor_mode;
 }
 
 void check_files(ifstream& in_file, string& in_name,
@@ -52,7 +73,7 @@ void check_files(ifstream& in_file, string& in_name,
 
 int main(int argc, char* argv[]) {
 
-  check_arguments(argc, argv);
+  int sensor_mode = check_arguments(argc, argv);
 
   string in_file_name_ = argv[1];
   ifstream in_file_(in_file_name_.c_str(), ifstream::in);
@@ -132,6 +153,10 @@ int main(int argc, char* argv[]) {
   // Create a UKF instance
   UKF ukf;
 
+  ukf.use_radar_ = (sensor_mode & 1) > 0;
+  ukf.use_laser_ = (sensor_mode & 2) > 0;
+  cout << "Radar enabled=" << ukf.use_radar_ << "; Lidar enabled=" << ukf.use_laser_ << endl;
+
   // used to compute the RMSE later
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
@@ -207,10 +232,10 @@ int main(int argc, char* argv[]) {
     // convert ukf x vector to cartesian to compare to ground truth
     VectorXd ukf_x_cartesian_ = VectorXd(4);
 
-    float x_estimate_ = ukf.x_(0);
-    float y_estimate_ = ukf.x_(1);
-    float vx_estimate_ = ukf.x_(2) * cos(ukf.x_(3));
-    float vy_estimate_ = ukf.x_(2) * sin(ukf.x_(3));
+    double x_estimate_ = ukf.x_(0);
+    double y_estimate_ = ukf.x_(1);
+    double vx_estimate_ = ukf.x_(2) * cos(ukf.x_(3));
+    double vy_estimate_ = ukf.x_(2) * sin(ukf.x_(3));
     
     ukf_x_cartesian_ << x_estimate_, y_estimate_, vx_estimate_, vy_estimate_;
     

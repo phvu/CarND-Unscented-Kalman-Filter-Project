@@ -12,10 +12,21 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 class UKF {
-public:
+private:
+
+  long long previous_timestamp_;
 
   ///* initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
+
+  Tools tools_;
+
+  MatrixXd H_laser_;
+
+  MatrixXd R_laser_;
+
+public:
+
 
   ///* if this is false, laser measurements will be ignored (except for init)
   bool use_laser_;
@@ -108,6 +119,11 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+private:
+
+  void initialize(MeasurementPackage meas_package);
+
 };
 
 #endif /* UKF_H */
