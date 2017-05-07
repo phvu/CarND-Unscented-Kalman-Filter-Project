@@ -25,7 +25,7 @@ UKF::UKF() {
   P_ = MatrixXd::Identity(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 2;
+  std_a_ = 0.9;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 0.3;
@@ -77,6 +77,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   if (!is_initialized_) {
     initialize(meas_package);
     is_initialized_ = true;
+    previous_timestamp_ = meas_package.timestamp_;
     return;
   }
 
@@ -295,7 +296,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 void UKF::initialize(MeasurementPackage meas_package) {
 
-  double px, py;
+  double px, py, err;
   if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
 
     // Convert radar from polar to cartesian coordinates
@@ -303,16 +304,16 @@ void UKF::initialize(MeasurementPackage meas_package) {
     double phi = meas_package.raw_measurements_[1];
     px = r * cos(phi);
     py = r * sin(phi);
-
+    err = 0.05;
   } else {
+    // laser is more accurate than radar in position
     px = meas_package.raw_measurements_[0];
     py = meas_package.raw_measurements_[1];
+    err = 0.01;
   }
 
-  x_ << px, py, 0, 0, 0;
+  x_ << px, py, 5, 0, 0;
 
   long n = x_.size();
-  P_ = MatrixXd::Identity(n, n);
-
-  previous_timestamp_ = meas_package.timestamp_;
+  P_ = MatrixXd::Ones(n, n) * 0.004 + MatrixXd::Identity(n, n) * err;
 }

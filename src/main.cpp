@@ -155,7 +155,8 @@ int main(int argc, char* argv[]) {
 
   ukf.use_radar_ = (sensor_mode & 1) > 0;
   ukf.use_laser_ = (sensor_mode & 2) > 0;
-  cout << "Radar enabled=" << ukf.use_radar_ << "; Lidar enabled=" << ukf.use_laser_ << endl;
+  cout << "Radar " << (ukf.use_radar_ ? "enabled" : "disabled")
+       << ", Lidar " << (ukf.use_laser_ ? "enabled" : "disabled") << endl;
 
   // used to compute the RMSE later
   vector<VectorXd> estimations;
@@ -243,6 +244,9 @@ int main(int argc, char* argv[]) {
     ground_truth.push_back(gt_pack_list[k].gt_values_);
 
   }
+
+  // cout << "x" << endl << ukf.x_ << endl;
+  // cout << "P" << endl << ukf.P_ << endl;
 
   // compute the accuracy (RMSE)
   Tools tools;
